@@ -22,25 +22,25 @@ public class ApiTransformer implements ClassFileTransformer {
                             Class<?> classBeingRedefined,
                             ProtectionDomain protectionDomain,
                             byte[] classfileBuffer) {
-        // 跳过系统类和自己的类
+        // 跳过系统类、第三方库类和自己的类
         if (className == null ||
                 className.startsWith("java/") ||
                 className.startsWith("javax/") ||
                 className.startsWith("sun/") ||
                 className.startsWith("jdk/") ||
-                className.startsWith("site/hnfy258/") ||
-                className.startsWith("org/springframework/")) { // 跳过Spring框架类，防止循环
+                className.startsWith("org/springframework/") ||
+                className.startsWith("org/apache/") || // 跳过 Apache 类
+                className.startsWith("site/hnfy258/")) {
             return classfileBuffer;
         }
 
         try {
-            // 过滤目标类
+            // 只处理目标类
             if (className.contains("controller") ||
                     className.contains("resource") ||
                     className.contains("rest") ||
                     className.contains("action") ||
                     className.contains("javaweb")) {
-
 
                 System.out.println("处理类: " + className);
 
@@ -61,30 +61,9 @@ public class ApiTransformer implements ClassFileTransformer {
                     return classfileBuffer;
                 }
 
-                // 获取类级别的RequestMapping注解路径
-                String basePathStr = "";
-                try {
-                    Object[] classAnnotations = ctClass.getAnnotations();
-                    for (Object anno : classAnnotations) {
-                        String annoStr = anno.toString();
-                        if (annoStr.contains("RequestMapping")) {
-                            Matcher matcher = PATH_PATTERN.matcher(annoStr);
-                            if (matcher.find()) {
-                                basePathStr = matcher.group(1).replace("\"", "");
-                                if (!basePathStr.startsWith("/")) {
-                                    basePathStr = "/" + basePathStr;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                } catch (Exception e) {
-                    // 忽略注解处理错误
-                }
-
                 // 处理所有方法
                 for (CtMethod method : ctClass.getDeclaredMethods()) {
-                    processMethod(ctClass, method, basePathStr);
+                    processMethod(ctClass, method, "");
                 }
 
                 return ctClass.toBytecode();

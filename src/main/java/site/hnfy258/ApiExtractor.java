@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -111,48 +113,33 @@ public class ApiExtractor implements ApplicationRunner {
 
     // 启动后动态记录API信息的方法
     public static void extractApiInfo(String path, String method, Map<String, Object> params, String returnType) {
-// 创建API信息对象
+        // 创建API信息对象
         Map<String, Object> apiInfo = new HashMap<>();
         apiInfo.put("Web API 路径", path);
         apiInfo.put("HTTP 方法", method);
         apiInfo.put("请求参数", params);
         apiInfo.put("返回值", returnType);
 
-// 检查是否已记录过该API
+        // 检查是否已记录过该API
         String apiKey = path + ":" + method;
         if (!recordedApis.contains(apiKey)) {
             recordedApis.add(apiKey); // 记录到集合中
 
-
-// 确保输出目录存在
+            // 确保输出目录存在
             File outputDir = new File("./output");
             if (!outputDir.exists()) {
                 outputDir.mkdirs();
             }
 
-// 写入文件，使用同步块避免并发问题
+            // 写入文件，使用同步块避免并发问题
             synchronized (ApiExtractor.class) {
-                Writer writer = null;
                 try {
-                    writer = new OutputStreamWriter(
-                            new FileOutputStream(OUTPUT_FILE, true),
-                            StandardCharsets.UTF_8
-                    );
-
+                    // 使用 Files.write 简化文件写入逻辑
                     String jsonOutput = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(apiInfo);
-                    writer.write(jsonOutput);
-                    writer.write("\n");
+                    Files.write(Paths.get(OUTPUT_FILE), jsonOutput.getBytes(StandardCharsets.UTF_8));
                     System.out.println("已记录API: " + path + " [" + method + "]");
                 } catch (IOException e) {
                     System.err.println("写入API信息失败: " + e.getMessage());
-                } finally {
-                    if (writer != null) {
-                        try {
-                            writer.close();
-                        } catch (IOException e) {
-                            System.err.println("关闭文件写入器失败: " + e.getMessage());
-                        }
-                    }
                 }
             }
         }

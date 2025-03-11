@@ -16,34 +16,34 @@ public class ApiAgent {
 
     private static void setupAgent(Instrumentation inst) {
         try {
-// 创建输出目录
+            System.out.println("开始初始化 Agent...");
+
+            // 创建输出目录
             File outputDir = new File("./output");
             if (!outputDir.exists()) {
                 boolean created = outputDir.mkdirs();
                 System.out.println("创建输出目录: " + (created ? "成功" : "失败"));
             }
 
-
-// 清空之前的API文件
+            // 清空之前的API文件
             File apiFile = new File("./output/api_info.json");
             if (apiFile.exists()) {
                 apiFile.delete();
                 System.out.println("清除旧的API信息文件");
             }
 
-// 添加转换器
+            // 添加转换器
             inst.addTransformer(new ApiTransformer(), true);
             System.out.println("已添加API转换器");
 
-// 如果是动态加载，重新转换已加载的类
+            // 如果是动态加载，重新转换已加载的类
             if (inst.isRetransformClassesSupported()) {
-                // 获取所有已加载的类
                 Class<?>[] loadedClasses = inst.getAllLoadedClasses();
                 System.out.println("准备检查 " + loadedClasses.length + " 个已加载的类");
 
-                // 筛选可以重新转换的类
                 for (Class<?> clazz : loadedClasses) {
                     String className = clazz.getName();
+                    // 只重新转换目标类
                     if ((className.contains("controller") ||
                             className.contains("resource") ||
                             className.contains("rest") ||
@@ -52,7 +52,10 @@ public class ApiAgent {
                             !className.startsWith("java.") &&
                             !className.startsWith("javax.") &&
                             !className.startsWith("sun.") &&
-                            !className.startsWith("site.hnfy258")) {
+                            !className.startsWith("jdk.") &&
+                            !className.startsWith("org.springframework.") &&
+                            !className.startsWith("org.apache.") &&
+                            !className.startsWith("site.hnfy258.")) {
 
                         try {
                             inst.retransformClasses(clazz);
@@ -63,6 +66,8 @@ public class ApiAgent {
                     }
                 }
             }
+
+            System.out.println("Agent 初始化完成!");
         } catch (Exception e) {
             System.err.println("设置代理时出错: " + e.getMessage());
             e.printStackTrace();
