@@ -17,7 +17,6 @@ public class ApiAgent {
     private static void setupAgent(Instrumentation inst) {
         try {
             System.out.println("开始初始化 Agent...");
-
             // 创建输出目录
             File outputDir = new File("./output");
             if (!outputDir.exists()) {
@@ -25,38 +24,23 @@ public class ApiAgent {
                 System.out.println("创建输出目录: " + (created ? "成功" : "失败"));
             }
 
-            // 清空之前的API文件
+            // 清空之前的 API 文件
             File apiFile = new File("./output/api_info.json");
             if (apiFile.exists()) {
                 apiFile.delete();
-                System.out.println("清除旧的API信息文件");
+                System.out.println("清除旧的 API 信息文件");
             }
 
             // 添加转换器
             inst.addTransformer(new ApiTransformer(), true);
-            System.out.println("已添加API转换器");
 
             // 如果是动态加载，重新转换已加载的类
             if (inst.isRetransformClassesSupported()) {
                 Class<?>[] loadedClasses = inst.getAllLoadedClasses();
-                System.out.println("准备检查 " + loadedClasses.length + " 个已加载的类");
-
                 for (Class<?> clazz : loadedClasses) {
                     String className = clazz.getName();
-                    // 只重新转换目标类
-                    if ((className.contains("controller") ||
-                            className.contains("resource") ||
-                            className.contains("rest") ||
-                            className.contains("action") ||
-                            className.contains("javaweb")) &&
-                            !className.startsWith("java.") &&
-                            !className.startsWith("javax.") &&
-                            !className.startsWith("sun.") &&
-                            !className.startsWith("jdk.") &&
-                            !className.startsWith("org.springframework.") &&
-                            !className.startsWith("org.apache.") &&
-                            !className.startsWith("site.hnfy258.")) {
-
+                    if ((className.contains("controller") || className.contains("rest")) &&
+                            !className.startsWith("java.") && !className.startsWith("javax.")) {
                         try {
                             inst.retransformClasses(clazz);
                             System.out.println("重新转换类: " + className);
@@ -66,7 +50,6 @@ public class ApiAgent {
                     }
                 }
             }
-
             System.out.println("Agent 初始化完成!");
         } catch (Exception e) {
             System.err.println("设置代理时出错: " + e.getMessage());

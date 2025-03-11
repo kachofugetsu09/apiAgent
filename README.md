@@ -23,9 +23,10 @@ java -javaagent:F:\\ApiExecutor\\target\\ApiExecutor-1.0-SNAPSHOT-jar-with-depen
 # 先启动目标应用
 ```
 java -jar vuln-springboot3-3.0.3.jar
+jps -l
 
 # 新终端窗口执行附加（替换为实际PID）
-java -cp ApiExecutor-1.0-SNAPSHOT-jar-with-dependencies.jar site.hnfy258.AgentAttacher 15128
+java -cp F:\\ApiExecutor\\target\\ApiExecutor-1.0-SNAPSHOT-jar-with-dependencies.jar site.hnfy258.AgentAttacher 10228
 ```
 
 ---
