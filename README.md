@@ -1,112 +1,60 @@
-# Java API 自动提取代理工具
+# Java API 动态提取工具
 
-## 项目概述
+基于Java Agent技术的API信息提取工具，支持启动时注入和运行时动态附加两种模式。
 
-该项目是一个基于Java Agent技术的API自动提取工具，能够在Java应用运行时动态检测并记录Web API接口信息。工具可以在应用启动时加载，也可以动态附加到已运行的Java进程中，无需修改原有代码即可完成API信息的提取和记录。
+---
 
-## 功能特点
+## 核心功能
+- ✅ 自动识别Spring Boot接口（GET/POST）
+- ✅ 提取路径、方法、参数、返回值
+- ❌ 输出结构化JSON文档
+- ✅ 双模式支持：启动注入 & 动态附加
 
-- **双模式运行**：支持在应用启动时（premain）和运行时动态加载（agentmain）两种方式
-- **自动API检测**：通过识别常见的Web API注解和命名模式，自动发现应用中的接口
-- **详细信息提取**：记录API路径、HTTP方法、请求参数和返回类型等完整信息
-- **非侵入式设计**：不需要修改原应用代码，通过字节码增强技术动态收集信息
-- **高效性能**：专注于控制器类，避免处理不必要的系统类和框架类
-- **输出结构化数据**：将API信息以JSON格式保存，便于后续处理和分析
+---
 
-## 系统组件
+## 快速使用
 
-### 1. AgentAttacher - 代理附加器
+### 1. 启动时注入
+```bash
+java -javaagent:F:\\ApiExecutor\\target\\ApiExecutor-1.0-SNAPSHOT-jar-with-dependencies.jar -jar vuln-springboot3-3.0.3.jar
+```
 
-负责将API提取代理动态附加到正在运行的Java应用进程中。
+2. 动态附加模式
+# 先启动目标应用
+```
+java -jar vuln-springboot3-3.0.3.jar
 
-**主要功能**：
-- 接收目标进程ID，动态定位并加载Agent JAR文件
-- 支持通过命令行指定Agent路径或自动查找
-- 通过多级查找策略确保在不同环境下能正确找到Agent JAR文件
+# 新终端窗口执行附加（替换为实际PID）
+java -cp ApiExecutor-1.0-SNAPSHOT-jar-with-dependencies.jar site.hnfy258.AgentAttacher 15128
+```
 
-**使用方法**：
-java -jar agent-attacher.jar <进程ID> [代理JAR路径]
+---
 
-
-
-### 2. ApiAgent - API代理主类
-
-Agent的核心类，负责初始化API提取环境并注册转换器。
-
-**主要功能**：
-- 处理应用启动时和运行时两种加载模式
-- 创建输出目录，清理旧数据
-- 添加API转换器，处理字节码增强
-- 对已加载的类进行重新转换（在动态模式下）
-
-### 3. ApiTransformer - API转换器
-
-负责通过字节码增强技术收集API信息。
-
-**主要功能**：
-- 筛选并处理包含Controller、Resource等关键字的目标类
-- 识别API相关注解（如RequestMapping、GetMapping等）
-- 通过代码注入技术动态收集API调用信息
-- 支持从注解或方法名推断HTTP方法和路径
-
-### 4. ApiExtractor - API提取器
-
-负责将收集到的API信息保存为结构化数据。
-
-**主要功能**：
-- 在Spring应用启动后自动扫描所有API端点
-- 提取API路径、HTTP方法、参数信息和返回类型
-- 避免重复记录相同的API接口
-- 将API信息以JSON格式保存到output目录中
-
-## 工作流程
-
-1. **初始化阶段**：
-   - 作为Java代理被加载（启动时或运行时）
-   - 创建输出目录，准备环境
-
-2. **扫描阶段**：
-   - 对目标类进行筛选（Controller、Resource等）
-   - 分析类和方法上的注解，识别API端点
-   - 必要时从方法名推断HTTP方法
-
-3. **转换阶段**：
-   - 通过字节码操作为API方法注入信息收集代码
-   - 收集参数类型、返回值等详细信息
-
-4. **记录阶段**：
-   - 将收集到的API信息输出为JSON格式
-   - 去除重复API，确保数据唯一性
-
-## 技术特性
-
-- **字节码增强**：使用Javassist库进行类和方法的字节码操作
-- **JVM工具API**：使用Attach API动态附加到JVM进程
-- **正则表达式**：用于解析注解中的路径和方法信息
-- **线程安全设计**：使用ConcurrentHashMap和同步块确保多线程环境下的数据一致性
-- **Spring集成**：与Spring框架无缝集成，自动识别请求映射
-
-## 输出示例
-
-API信息将以JSON格式保存在`./output/api_info.json`文件中，每个API的信息结构如下：
+输出示例
+生成路径：./output/api_info.json
 
 ```json
 {
-  "Web API 路径": "/users/{id}",
-  "HTTP 方法": "GET",
+  "Web API 路径": "/CMD/cookie/cmd.do",
+  "HTTP 方法": "POST",
   "请求参数": {
-    "id": "路径变量: Long"
+    "cmd": "请求参数: String"
   },
-  "返回值": "UserDTO"
+  "返回值": "String"
 }
-使用场景
-API文档自动生成：从运行的应用中提取API信息，自动生成接口文档
-安全审计：分析系统中的所有API接口，检查是否存在安全隐患
-接口测试：为自动化测试提供API清单和参数信息
-接口管理：对大型系统的接口进行统一管理和监控
-系统重构：在重构老系统时，自动发现现有接口，避免遗漏
+```
+
+
+技术特性
+基于Javassist字节码增强
+支持Spring Boot 3.x
+自动跳过非业务类
+线程安全的数据收集
+
+---
+
 注意事项
-Agent需要使用JDK的Attach API，因此运行时需要完整的JDK环境
-对于特殊的API设计模式，可能需要调整ApiTransformer中的识别逻辑
-输出目录默认为当前工作目录下的./output，请确保有写入权限
-代理会跳过系统类、Spring框架类和自身类，以避免不必要的处理和潜在的循环问题
+需使用JDK环境（含Attach API）
+确保输出目录有写入权限
+动态附加时需保持Agent JAR路径有效
+特殊注解处理可修改ApiTransformer
